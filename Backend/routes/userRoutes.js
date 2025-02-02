@@ -1,7 +1,7 @@
 const express = require("express");
 const { verificarToken, verificarAdmin } = require("../middleware/auth");
 const { register, login } = require("../controllers/authController");
-const { getAllUsers, createUser, updateUser, deleteUser, getUserById } = require("../controllers/userController");
+const { getAllUsers, createUser, updateUser, deleteUser, getUserById, updateUserPreferences, updateUserProfile } = require("../controllers/userController");
 
 const router = express.Router();
 
@@ -17,5 +17,8 @@ router.get("/getAllUsers", verificarToken, verificarAdmin, getAllUsers);
 router.put("/updateUser/:id", verificarToken, verificarAdmin, updateUser);
 router.delete("/deleteUser/:id", verificarToken, verificarAdmin, deleteUser);
 router.get("/getUserById/:id", verificarToken, verificarAdmin, getUserById);
+// Rutas para actualizar perfil y preferencias
+router.put("/update-profile", verificarToken, updateUserProfile);
+router.put("/update-preferences", verificarToken, updateUserPreferences);
 
 module.exports = router;

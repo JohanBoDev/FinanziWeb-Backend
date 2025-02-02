@@ -105,10 +105,62 @@ const getUserById = async (req, res) => {
   }
 };
 
+// Permitir al usuario actualizar su perfil
+
+const updateUserProfile = async (req, res) => {
+  try {
+    const { name, profilePicture } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.userId, // ID del usuario autenticado
+      { name, profilePicture },
+      { new: true, select: "-password" } // Excluir contraseña del resultado
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.json({ message: "Perfil actualizado correctamente", user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar el perfil", error });
+  }
+};
+
+// Permite actualizar preferencias de usuario
+const updateUserPreferences = async (req, res) => {
+  try {
+    const { currency, notificationsEnabled } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.userId, // ID del usuario autenticado
+      {
+        preferences: {
+          currency,
+          notificationsEnabled
+        }
+      },
+      { new: true, select: "-password" }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.json({ message: "Preferencias actualizadas correctamente", user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar las preferencias", error });
+  }
+};
+
+
+
 module.exports = {
   getAllUsers,
   createUser,
   updateUser,
   deleteUser,
   getUserById,
+  updateUserProfile,
+  updateUserPreferences
 };
