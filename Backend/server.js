@@ -7,7 +7,9 @@ const morgan = require("morgan");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db")
 const usersRoutes = require("./routes/userRoutes");
-const errorHandler = require("./middleware/errorHandler"); // Nuevo middleware de errores
+const errorHandler = require("./middleware/errorHandler"); 
+const savingsRoutes = require("./routes/savingsRoutes");
+const debtRoutes = require("./routes/debtRoutes");
 
 
 
@@ -33,6 +35,8 @@ app.get("/", (req, res) => {
 
 // Rutas principales
 app.use("/api/users", usersRoutes);
+app.use("/api/savings", savingsRoutes);
+app.use("/api/debts", debtRoutes);
 
 
 // Ruta de prueba
