@@ -10,6 +10,7 @@ const usersRoutes = require("./routes/userRoutes");
 const errorHandler = require("./middleware/errorHandler"); 
 const savingsRoutes = require("./routes/savingsRoutes");
 const debtRoutes = require("./routes/debtRoutes");
+const interesRoutes = require("./routes/interestRoutes");
 
 
 
@@ -37,6 +38,7 @@ app.get("/", (req, res) => {
 app.use("/api/users", usersRoutes);
 app.use("/api/savings", savingsRoutes);
 app.use("/api/debts", debtRoutes);
+app.use("/api/interests", interesRoutes);
 
 
 // Ruta de prueba
