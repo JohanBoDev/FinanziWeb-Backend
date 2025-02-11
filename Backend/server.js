@@ -13,6 +13,8 @@ const debtRoutes = require("./routes/debtRoutes");
 const interesRoutes = require("./routes/interestRoutes");
 const mortgageRoutes = require("./routes/mortgageRoutes");
 const investmentRoutes = require("./routes/investmentRoutes");
+const budgetRoutes = require("./routes/budgetRoutes");
+const expenseRoutes = require("./routes/expenseRoutes");
 
 
 // Cargar variables de entorno
@@ -42,6 +44,8 @@ app.use("/api/debts", debtRoutes);
 app.use("/api/interests", interesRoutes);
 app.use("/api/mortgages", mortgageRoutes);
 app.use("/api/investments", investmentRoutes);
+app.use("/api/budgets", budgetRoutes);
+app.use("/api/expenses", expenseRoutes);
 
 
 // Ruta de prueba
