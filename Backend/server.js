@@ -5,9 +5,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
-const connectDB = require("./config/db")
+const connectDB = require("./config/db");
 const usersRoutes = require("./routes/userRoutes");
-const errorHandler = require("./middleware/errorHandler"); 
+const errorHandler = require("./middleware/errorHandler");
 const savingsRoutes = require("./routes/savingsRoutes");
 const debtRoutes = require("./routes/debtRoutes");
 const interesRoutes = require("./routes/interestRoutes");
@@ -15,7 +15,7 @@ const mortgageRoutes = require("./routes/mortgageRoutes");
 const investmentRoutes = require("./routes/investmentRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
-
+const savingsGoalsRoutes = require("./routes/savingsGoalsRoutes");
 
 // Cargar variables de entorno
 dotenv.config();
@@ -33,9 +33,8 @@ app.use(express.json()); // Parsear el cuerpo de las solicitudes en formato JSON
 connectDB();
 
 app.get("/", (req, res) => {
-    res.send("¡API funcionando con MongoDB!");
-  });
-  
+  res.send("¡API funcionando con MongoDB!");
+});
 
 // Rutas principales
 app.use("/api/users", usersRoutes);
@@ -46,14 +45,14 @@ app.use("/api/mortgages", mortgageRoutes);
 app.use("/api/investments", investmentRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/expenses", expenseRoutes);
-
+app.use("/api/savingsGoals", savingsGoalsRoutes);
 
 // Ruta de prueba
 app.get("/", (req, res) => {
   res.send("¡Backend de Finanzi funcionando!");
 });
 
-// Middleware para manejar errores 
+// Middleware para manejar errores
 app.use(errorHandler);
 
 // Configurar el puerto
