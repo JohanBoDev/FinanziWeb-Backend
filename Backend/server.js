@@ -16,6 +16,8 @@ const investmentRoutes = require("./routes/investmentRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const savingsGoalsRoutes = require("./routes/savingsGoalsRoutes");
+const debtManagementRoutes = require("./routes/debtManagementRoutes");
+const currencyRoutes = require("./routes/currencyRoutes");
 
 // Cargar variables de entorno
 dotenv.config();
@@ -46,6 +48,8 @@ app.use("/api/investments", investmentRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/savingsGoals", savingsGoalsRoutes);
+app.use("/api/debtManagement", debtManagementRoutes);
+app.use("/api/currency", currencyRoutes);
 
 // Ruta de prueba
 app.get("/", (req, res) => {
