@@ -1,8 +1,11 @@
 const mongoose = require("mongoose");
+require("dotenv").config(); // Asegúrate de importar dotenv
 
 const connectDB = async () => {
   try {
-    await mongoose.connect("mongodb://localhost:27017/Finanzi", {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
     });
     console.log("✅ MongoDB conectado correctamente");
   } catch (error) {

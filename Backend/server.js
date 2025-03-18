@@ -60,7 +60,7 @@ app.get("/", (req, res) => {
 app.use(errorHandler);
 
 // Configurar el puerto
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 2000;
 
 // Iniciar el servidor
 app.listen(PORT, () => {

@@ -15,7 +15,5 @@ const userSchema = new mongoose.Schema(
   { timestamps: true } // 🔹 Agrega `createdAt` y `updatedAt`
 );
 
-// 🔹 Índice para mejorar consultas
-userSchema.index({ role: 1 });
 
 module.exports = mongoose.model("User", userSchema);
