@@ -15,7 +15,7 @@ exports.createSavings = async (req, res) => {
       initialAmount,
       monthlyContribution,
       interestRate, // opcional
-      compoundFrequency,
+      compoundFrequency, // veces al año
       timeInYears,
     } = req.body;
 
@@ -37,30 +37,30 @@ exports.createSavings = async (req, res) => {
       });
     }
 
-    // 🔹 Conversión segura
+    // Conversión segura
     const P = Number(initialAmount);
     const M = Number(monthlyContribution);
-    const r = Number(interestRate); // puede ser 0
-    const n = Number(compoundFrequency);
+    const r = Number(interestRate); // Ej: 0.05 (5%)
+    const n = Number(compoundFrequency); // Ej: 12 para mensual
     const t = Number(timeInYears);
 
-    let finalAmount = P;
-    let interestEarned = 0;
+    const totalMeses = t * 12;
+    let saldo = P;
+    const mesesPorCapitalizacion = Math.floor(12 / n);
 
-    if (r > 0) {
-      // 🔹 Cálculo con interés compuesto
-      finalAmount =
-        P * Math.pow(1 + r / n, n * t) +
-        M * ((Math.pow(1 + r / n, n * t) - 1) / (r / n));
+    // 🔁 Simulación mes a mes
+    for (let mes = 1; mes <= totalMeses; mes++) {
+      saldo += M; // aporte mensual
 
-      // ✅ Aportes mensuales (12 por año)
-      const totalAportado = P + M * t * 12;
-      interestEarned = finalAmount - totalAportado;
-    } else {
-      // 🔹 Solo ahorro sin intereses
-      finalAmount = P + M * t * 12;
-      interestEarned = 0;
+      // Si es momento de capitalizar
+      if (mes % mesesPorCapitalizacion === 0 && r > 0) {
+        const tasaPeriodo = r / n;
+        saldo *= 1 + tasaPeriodo;
+      }
     }
+
+    const totalAportado = P + M * totalMeses;
+    const interestEarned = saldo - totalAportado;
 
     const newSavings = new SavingsCalculation({
       userId,
@@ -69,7 +69,7 @@ exports.createSavings = async (req, res) => {
       interestRate: r || 0,
       compoundFrequency: n,
       timeInYears: t,
-      finalAmount: finalAmount.toFixed(2),
+      finalAmount: saldo.toFixed(2),
       interestEarned: interestEarned.toFixed(2),
       saved: true,
     });
@@ -85,7 +85,7 @@ exports.createSavings = async (req, res) => {
         interestRate: r ? `${(r * 100).toFixed(2)}%` : "Sin interés",
         compoundFrequency: n,
         timeInYears: t,
-        finalAmount: formatCOP(finalAmount),
+        finalAmount: formatCOP(saldo),
         interestEarned: formatCOP(interestEarned),
         createdAt: newSavings.createdAt,
       },
