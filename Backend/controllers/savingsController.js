@@ -37,7 +37,7 @@ exports.createSavings = async (req, res) => {
       });
     }
 
-    // 🔹 Asegurar conversión numérica segura
+    // 🔹 Conversión segura
     const P = Number(initialAmount);
     const M = Number(monthlyContribution);
     const r = Number(interestRate); // puede ser 0
@@ -53,6 +53,7 @@ exports.createSavings = async (req, res) => {
         P * Math.pow(1 + r / n, n * t) +
         M * ((Math.pow(1 + r / n, n * t) - 1) / (r / n));
 
+      // ✅ Aportes mensuales (12 por año)
       const totalAportado = P + M * t * 12;
       interestEarned = finalAmount - totalAportado;
     } else {
@@ -60,13 +61,6 @@ exports.createSavings = async (req, res) => {
       finalAmount = P + M * t * 12;
       interestEarned = 0;
     }
-
-    const formatCOP = (value) =>
-      new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        minimumFractionDigits: 2,
-      }).format(value);
 
     const newSavings = new SavingsCalculation({
       userId,
@@ -98,9 +92,10 @@ exports.createSavings = async (req, res) => {
     });
   } catch (error) {
     console.error("🔥 Error en createSavings:", error);
-    res
-      .status(500)
-      .json({ message: "Error al calcular el ahorro", error: error.message });
+    res.status(500).json({
+      message: "Error al calcular el ahorro",
+      error: error.message,
+    });
   }
 };
 
