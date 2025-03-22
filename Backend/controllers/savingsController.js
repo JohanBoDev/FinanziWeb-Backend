@@ -10,84 +10,100 @@ const formatCOP = (value) => new Intl.NumberFormat("es-CO", {
 
 // 📌 Crear un nuevo cálculo de ahorros
 exports.createSavings = async (req, res) => {
-    try {
-      const {
-        initialAmount,
-        monthlyContribution,
-        interestRate, // Puede ser opcional
-        compoundFrequency,
-        timeInYears,
-      } = req.body;
-  
-      if (!req.user || !req.user.userId) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-  
-      const userId = req.user.userId;
-  
-      if (!initialAmount || !monthlyContribution || !compoundFrequency || !timeInYears) {
-        return res.status(400).json({ message: "Todos los campos son obligatorios excepto la tasa de interés" });
-      }
-  
-      let finalAmount = initialAmount;
-      let interestEarned = 0;
-  
-      if (interestRate && interestRate > 0) {
-        // 🔹 Cálculo con interés compuesto
-        const n = compoundFrequency;
-        const r = interestRate;
-        const P = initialAmount;
-        const t = timeInYears;
-  
-        finalAmount = P * Math.pow(1 + r / n, n * t) +
-          monthlyContribution * ((Math.pow(1 + r / n, n * t) - 1) / (r / n));
-  
-        interestEarned = finalAmount - (P + monthlyContribution * t * 12);
-      } else {
-        // 🔹 Cálculo sin intereses (solo acumulación de ahorros)
-        finalAmount = initialAmount + (monthlyContribution * timeInYears * 12);
-        interestEarned = 0; // No hay ganancias por intereses
-      }
-  
-      // 🔹 Formatear valores en COP
-      const formatCOP = (value) => new Intl.NumberFormat("es-CO", {
+  try {
+    const {
+      initialAmount,
+      monthlyContribution,
+      interestRate, // opcional
+      compoundFrequency,
+      timeInYears,
+    } = req.body;
+
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ message: "Usuario no autenticado" });
+    }
+
+    const userId = req.user.userId;
+
+    if (
+      initialAmount === undefined ||
+      monthlyContribution === undefined ||
+      !compoundFrequency ||
+      !timeInYears
+    ) {
+      return res.status(400).json({
+        message:
+          "Todos los campos son obligatorios excepto la tasa de interés",
+      });
+    }
+
+    // 🔹 Asegurar conversión numérica segura
+    const P = Number(initialAmount);
+    const M = Number(monthlyContribution);
+    const r = Number(interestRate); // puede ser 0
+    const n = Number(compoundFrequency);
+    const t = Number(timeInYears);
+
+    let finalAmount = P;
+    let interestEarned = 0;
+
+    if (r > 0) {
+      // 🔹 Cálculo con interés compuesto
+      finalAmount =
+        P * Math.pow(1 + r / n, n * t) +
+        M * ((Math.pow(1 + r / n, n * t) - 1) / (r / n));
+
+      const totalAportado = P + M * t * 12;
+      interestEarned = finalAmount - totalAportado;
+    } else {
+      // 🔹 Solo ahorro sin intereses
+      finalAmount = P + M * t * 12;
+      interestEarned = 0;
+    }
+
+    const formatCOP = (value) =>
+      new Intl.NumberFormat("es-CO", {
         style: "currency",
         currency: "COP",
         minimumFractionDigits: 2,
       }).format(value);
-  
-      const newSavings = new SavingsCalculation({
-        userId,
-        initialAmount,
-        monthlyContribution,
-        interestRate: interestRate || 0, // Si no hay tasa, se guarda como 0
-        compoundFrequency,
-        timeInYears,
-        finalAmount: finalAmount.toFixed(2),
-        interestEarned: interestEarned.toFixed(2),
-        saved: true,
-      });
-  
-      await newSavings.save();
-      res.status(201).json({
-        message: "Cálculo de ahorro guardado con éxito",
-        ahorro: {
-          _id: newSavings._id,
-          initialAmount: formatCOP(initialAmount),
-          monthlyContribution: formatCOP(monthlyContribution),
-          interestRate: interestRate ? `${(interestRate * 100).toFixed(2)}%` : "Sin interés",
-          compoundFrequency,
-          timeInYears,
-          finalAmount: formatCOP(finalAmount),
-          interestEarned: formatCOP(interestEarned),
-          createdAt: newSavings.createdAt,
-        },
-      });
-    } catch (error) {
-      console.error("🔥 Error en createSavings:", error);
-      res.status(500).json({ message: "Error al calcular el ahorro", error: error.message });
-    }
-  };
+
+    const newSavings = new SavingsCalculation({
+      userId,
+      initialAmount: P,
+      monthlyContribution: M,
+      interestRate: r || 0,
+      compoundFrequency: n,
+      timeInYears: t,
+      finalAmount: finalAmount.toFixed(2),
+      interestEarned: interestEarned.toFixed(2),
+      saved: true,
+    });
+
+    await newSavings.save();
+
+    res.status(201).json({
+      message: "Cálculo de ahorro guardado con éxito",
+      ahorro: {
+        _id: newSavings._id,
+        initialAmount: formatCOP(P),
+        monthlyContribution: formatCOP(M),
+        interestRate: r ? `${(r * 100).toFixed(2)}%` : "Sin interés",
+        compoundFrequency: n,
+        timeInYears: t,
+        finalAmount: formatCOP(finalAmount),
+        interestEarned: formatCOP(interestEarned),
+        createdAt: newSavings.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("🔥 Error en createSavings:", error);
+    res
+      .status(500)
+      .json({ message: "Error al calcular el ahorro", error: error.message });
+  }
+};
+
   
   // 📌 Obtener todos los cálculos de ahorro
   exports.getAllSavings = async (req, res) => {
