@@ -35,7 +35,7 @@ exports.createSavings = async (req, res) => {
             message: "Para guardar el cálculo debes iniciar sesión.",
           });
         }
-        // Si no quiere guardar, ignoramos el error
+        // Si no quiere guardar, ignoramos el error del token
       }
     }
 
@@ -54,8 +54,8 @@ exports.createSavings = async (req, res) => {
     // Conversión segura
     const P = Number(initialAmount);
     const M = Number(monthlyContribution);
-    const r = Number(interestRate); // Ej: 0.05 (5%)
-    const n = Number(compoundFrequency); // Ej: 12 para mensual
+    const r = Number(interestRate);
+    const n = Number(compoundFrequency);
     const t = Number(timeInYears);
 
     const totalMeses = t * 12;
@@ -65,7 +65,6 @@ exports.createSavings = async (req, res) => {
     // 🔁 Simulación mes a mes
     for (let mes = 1; mes <= totalMeses; mes++) {
       saldo += M;
-
       if (mes % mesesPorCapitalizacion === 0 && r > 0) {
         const tasaPeriodo = r / n;
         saldo *= 1 + tasaPeriodo;
@@ -87,6 +86,7 @@ exports.createSavings = async (req, res) => {
       saved,
     });
 
+    // Solo guardar en DB si lo solicita y está autenticado
     if (saved && userId) {
       await newSavings.save();
     }
@@ -121,7 +121,6 @@ exports.createSavings = async (req, res) => {
     });
   }
 };
-
 
   
   // 📌 Obtener todos los cálculos de ahorro
