@@ -1,4 +1,5 @@
 const DebtCalculation = require("../models/DebtCalculation");
+const jwt = require("jsonwebtoken");
 
 // 🔹 Función para formatear valores en COP
 const formatCOP = (value) => new Intl.NumberFormat("es-CO", {
@@ -10,55 +11,92 @@ const formatCOP = (value) => new Intl.NumberFormat("es-CO", {
 // 📌 Crear un nuevo cálculo de deuda
 exports.createDebt = async (req, res) => {
   try {
-    const { loanAmount, annualInterestRate, monthlyPayment } = req.body;
+    const {
+      loanAmount,
+      annualInterestRate,
+      monthlyPayment,
+      saved = false, // ✅ viene desde el frontend
+    } = req.body;
 
-    if (!req.user || !req.user.userId) {
-      return res.status(401).json({ message: "Usuario no autenticado" });
+    let userId = null;
+
+    // 🔐 Verificar token solo si quiere guardar
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        userId = decoded.userId;
+      } catch (err) {
+        if (saved === true) {
+          return res.status(401).json({
+            message: "Para guardar el cálculo debes iniciar sesión.",
+          });
+        }
+        // Si no quiere guardar, ignoramos error del token
+      }
     }
 
-    const userId = req.user.userId;
-
+    // 🧾 Validaciones básicas
     if (!loanAmount || !annualInterestRate || !monthlyPayment) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+      return res.status(400).json({
+        message: "Todos los campos son obligatorios",
+      });
     }
 
-    // 🔹 Convertir tasa anual a tasa mensual
+    // 🔹 Convertir tasa anual a mensual
     const monthlyInterestRate = annualInterestRate / 12;
 
-    // 🔹 Calcular el número total de pagos (meses)
-    const totalPayments = Math.log(monthlyPayment / (monthlyPayment - loanAmount * monthlyInterestRate)) / Math.log(1 + monthlyInterestRate);
+    // 🔹 Número total de pagos (meses)
+    const totalPayments = Math.log(monthlyPayment / (monthlyPayment - loanAmount * monthlyInterestRate)) /
+                          Math.log(1 + monthlyInterestRate);
 
-    // 🔹 Calcular el total de intereses pagados
+    // 🔹 Total de intereses pagados
     const totalInterestPaid = (monthlyPayment * Math.ceil(totalPayments)) - loanAmount;
 
-    // 🔹 Guardar en la base de datos
+    // Crear objeto
     const newDebt = new DebtCalculation({
       userId,
       loanAmount,
       annualInterestRate,
       monthlyPayment,
-      totalPayments: Math.ceil(totalPayments), // Redondeamos al mes siguiente si es fraccionario
+      totalPayments: Math.ceil(totalPayments),
       totalInterestPaid: totalInterestPaid.toFixed(2),
-      saved: true,
+      saved,
     });
 
-    await newDebt.save();
+    // ✅ Solo guardar si el usuario está autenticado y quiere guardar
+    if (saved && userId) {
+      await newDebt.save();
+    }
+
+    // 🔄 Formato COP
+    const formatCOP = (value) =>
+      new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 2,
+      }).format(value);
+
+    // 📤 Respuesta
     res.status(201).json({
-      message: "Cálculo de deuda guardado con éxito",
+      message: saved ? "Cálculo de deuda guardado con éxito" : "Cálculo de deuda realizado",
       deuda: {
         _id: newDebt._id,
-        loanAmount: formatCOP(newDebt.loanAmount),
-        annualInterestRate: `${(newDebt.annualInterestRate * 100).toFixed(2)}%`,
-        monthlyPayment: formatCOP(newDebt.monthlyPayment),
-        totalPayments: newDebt.totalPayments,
-        totalInterestPaid: formatCOP(newDebt.totalInterestPaid),
+        loanAmount: formatCOP(loanAmount),
+        annualInterestRate: `${(annualInterestRate * 100).toFixed(2)}%`,
+        monthlyPayment: formatCOP(monthlyPayment),
+        totalPayments: Math.ceil(totalPayments),
+        totalInterestPaid: formatCOP(totalInterestPaid),
         createdAt: newDebt.createdAt,
       },
     });
-
   } catch (error) {
     console.error("🔥 Error en createDebt:", error);
-    res.status(500).json({ message: "Error al calcular la deuda", error: error.message });
+    res.status(500).json({
+      message: "Error al calcular la deuda",
+      error: error.message,
+    });
   }
 };
 

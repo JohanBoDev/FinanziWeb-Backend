@@ -42,6 +42,7 @@ exports.createSavings = async (req, res) => {
             message: "Para guardar el cálculo debes iniciar sesión.",
           });
         }
+        
       }
     } else {
       console.warn("⚠️ No se recibió token."); // <--- Log 4
