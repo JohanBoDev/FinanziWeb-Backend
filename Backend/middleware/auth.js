@@ -39,4 +39,21 @@ const verificarToken = (req, res, next) => {
   }
 };
 
-    module.exports = { verificarAdmin, verificarToken };
+const verificarTokenOpcional = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.replace("Bearer ", "");
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded; // ✅ lo inyectamos en req.user
+    } catch (err) {
+      // ❌ No detenemos el flujo, simplemente no hay usuario válido
+      console.warn("Token inválido o expirado, pero no es requerido.");
+    }
+  }
+
+  next(); // 🔄 Siempre continúa, sea que haya token válido o no
+};
+
+    module.exports = { verificarAdmin, verificarToken, verificarTokenOpcional };
