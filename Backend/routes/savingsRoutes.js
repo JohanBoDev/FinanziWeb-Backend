@@ -12,7 +12,7 @@ const { verificarToken } = require("../middleware/auth");
 // 📌 Crear un nuevo cálculo de ahorros
 // Ruta: POST /api/savings/createSavings
 // Descripción: Recibe datos del usuario y calcula el ahorro con interés compuesto, luego lo guarda en la base de datos.
-router.post("/createSavings", verificarToken, createSavings);
+router.post("/createSavings", createSavings);
 
 // 📌 Obtener todos los cálculos de ahorros de un usuario
 // Ruta: GET /api/savings/getAllSavings
