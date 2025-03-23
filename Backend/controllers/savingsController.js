@@ -17,25 +17,8 @@ exports.createSavings = async (req, res) => {
       interestRate, // opcional
       compoundFrequency, // veces al año
       timeInYears,
+      saved = false, // 🆕 Por defecto false
     } = req.body;
-
-    if (!req.user || !req.user.userId) {
-      return res.status(401).json({ message: "Usuario no autenticado" });
-    }
-
-    const userId = req.user.userId;
-
-    if (
-      initialAmount === undefined ||
-      monthlyContribution === undefined ||
-      !compoundFrequency ||
-      !timeInYears
-    ) {
-      return res.status(400).json({
-        message:
-          "Todos los campos son obligatorios excepto la tasa de interés",
-      });
-    }
 
     // Conversión segura
     const P = Number(initialAmount);
@@ -43,6 +26,14 @@ exports.createSavings = async (req, res) => {
     const r = Number(interestRate); // Ej: 0.05 (5%)
     const n = Number(compoundFrequency); // Ej: 12 para mensual
     const t = Number(timeInYears);
+
+    if (
+      isNaN(P) || isNaN(M) || isNaN(r) || isNaN(n) || isNaN(t)
+    ) {
+      return res.status(400).json({
+        message: "Los campos numéricos son obligatorios y deben ser válidos.",
+      });
+    }
 
     const totalMeses = t * 12;
     let saldo = P;
@@ -62,24 +53,49 @@ exports.createSavings = async (req, res) => {
     const totalAportado = P + M * totalMeses;
     const interestEarned = saldo - totalAportado;
 
-    const newSavings = new SavingsCalculation({
-      userId,
-      initialAmount: P,
-      monthlyContribution: M,
-      interestRate: r || 0,
-      compoundFrequency: n,
-      timeInYears: t,
-      finalAmount: saldo.toFixed(2),
-      interestEarned: interestEarned.toFixed(2),
-      saved: true,
-    });
+    // Si se quiere guardar, verificar autenticación
+    if (saved === true) {
+      if (!req.user || !req.user.userId) {
+        return res.status(401).json({
+          message: "Para guardar el cálculo debes iniciar sesión.",
+        });
+      }
 
-    await newSavings.save();
+      // Guardar en la base de datos
+      const newSavings = new SavingsCalculation({
+        userId: req.user.userId,
+        initialAmount: P,
+        monthlyContribution: M,
+        interestRate: r || 0,
+        compoundFrequency: n,
+        timeInYears: t,
+        finalAmount: saldo.toFixed(2),
+        interestEarned: interestEarned.toFixed(2),
+        saved: true,
+      });
 
-    res.status(201).json({
-      message: "Cálculo de ahorro guardado con éxito",
+      await newSavings.save();
+
+      return res.status(201).json({
+        message: "Cálculo guardado exitosamente.",
+        ahorro: {
+          _id: newSavings._id,
+          initialAmount: formatCOP(P),
+          monthlyContribution: formatCOP(M),
+          interestRate: r ? `${(r * 100).toFixed(2)}%` : "Sin interés",
+          compoundFrequency: n,
+          timeInYears: t,
+          finalAmount: formatCOP(saldo),
+          interestEarned: formatCOP(interestEarned),
+          createdAt: newSavings.createdAt,
+        },
+      });
+    }
+
+    // Si no se va a guardar, solo devolver los datos calculados
+    return res.status(200).json({
+      message: "Cálculo realizado correctamente.",
       ahorro: {
-        _id: newSavings._id,
         initialAmount: formatCOP(P),
         monthlyContribution: formatCOP(M),
         interestRate: r ? `${(r * 100).toFixed(2)}%` : "Sin interés",
@@ -87,7 +103,6 @@ exports.createSavings = async (req, res) => {
         timeInYears: t,
         finalAmount: formatCOP(saldo),
         interestEarned: formatCOP(interestEarned),
-        createdAt: newSavings.createdAt,
       },
     });
   } catch (error) {
@@ -98,6 +113,7 @@ exports.createSavings = async (req, res) => {
     });
   }
 };
+
 
   
   // 📌 Obtener todos los cálculos de ahorro
