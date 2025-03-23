@@ -17,8 +17,39 @@ exports.createSavings = async (req, res) => {
       interestRate, // opcional
       compoundFrequency, // veces al año
       timeInYears,
-      saved = false, // 🆕 Por defecto false
+      saved = false, // por defecto false si no viene
     } = req.body;
+
+    // 🔍 Verificar token solo si se quiere guardar
+    let userId = null;
+    const token = req.headers.authorization?.replace("Bearer ", "");
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.userId;
+        req.user = decoded;
+      } catch (err) {
+        if (saved === true) {
+          return res.status(401).json({
+            message: "Para guardar el cálculo debes iniciar sesión.",
+          });
+        }
+        // Si no quiere guardar, ignoramos el error
+      }
+    }
+
+    // ✅ Validaciones básicas
+    if (
+      initialAmount === undefined ||
+      monthlyContribution === undefined ||
+      !compoundFrequency ||
+      !timeInYears
+    ) {
+      return res.status(400).json({
+        message: "Todos los campos son obligatorios excepto la tasa de interés",
+      });
+    }
 
     // Conversión segura
     const P = Number(initialAmount);
@@ -27,23 +58,14 @@ exports.createSavings = async (req, res) => {
     const n = Number(compoundFrequency); // Ej: 12 para mensual
     const t = Number(timeInYears);
 
-    if (
-      isNaN(P) || isNaN(M) || isNaN(r) || isNaN(n) || isNaN(t)
-    ) {
-      return res.status(400).json({
-        message: "Los campos numéricos son obligatorios y deben ser válidos.",
-      });
-    }
-
     const totalMeses = t * 12;
     let saldo = P;
     const mesesPorCapitalizacion = Math.floor(12 / n);
 
     // 🔁 Simulación mes a mes
     for (let mes = 1; mes <= totalMeses; mes++) {
-      saldo += M; // aporte mensual
+      saldo += M;
 
-      // Si es momento de capitalizar
       if (mes % mesesPorCapitalizacion === 0 && r > 0) {
         const tasaPeriodo = r / n;
         saldo *= 1 + tasaPeriodo;
@@ -53,49 +75,34 @@ exports.createSavings = async (req, res) => {
     const totalAportado = P + M * totalMeses;
     const interestEarned = saldo - totalAportado;
 
-    // Si se quiere guardar, verificar autenticación
-    if (saved === true) {
-      if (!req.user || !req.user.userId) {
-        return res.status(401).json({
-          message: "Para guardar el cálculo debes iniciar sesión.",
-        });
-      }
+    const newSavings = new SavingsCalculation({
+      userId,
+      initialAmount: P,
+      monthlyContribution: M,
+      interestRate: r || 0,
+      compoundFrequency: n,
+      timeInYears: t,
+      finalAmount: saldo.toFixed(2),
+      interestEarned: interestEarned.toFixed(2),
+      saved,
+    });
 
-      // Guardar en la base de datos
-      const newSavings = new SavingsCalculation({
-        userId: req.user.userId,
-        initialAmount: P,
-        monthlyContribution: M,
-        interestRate: r || 0,
-        compoundFrequency: n,
-        timeInYears: t,
-        finalAmount: saldo.toFixed(2),
-        interestEarned: interestEarned.toFixed(2),
-        saved: true,
-      });
-
+    if (saved && userId) {
       await newSavings.save();
-
-      return res.status(201).json({
-        message: "Cálculo guardado exitosamente.",
-        ahorro: {
-          _id: newSavings._id,
-          initialAmount: formatCOP(P),
-          monthlyContribution: formatCOP(M),
-          interestRate: r ? `${(r * 100).toFixed(2)}%` : "Sin interés",
-          compoundFrequency: n,
-          timeInYears: t,
-          finalAmount: formatCOP(saldo),
-          interestEarned: formatCOP(interestEarned),
-          createdAt: newSavings.createdAt,
-        },
-      });
     }
 
-    // Si no se va a guardar, solo devolver los datos calculados
-    return res.status(200).json({
-      message: "Cálculo realizado correctamente.",
+    // 🔄 Formato COP
+    const formatCOP = (value) =>
+      new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 2,
+      }).format(value);
+
+    res.status(201).json({
+      message: saved ? "Cálculo de ahorro guardado con éxito" : "Cálculo de ahorro realizado",
       ahorro: {
+        _id: newSavings._id,
         initialAmount: formatCOP(P),
         monthlyContribution: formatCOP(M),
         interestRate: r ? `${(r * 100).toFixed(2)}%` : "Sin interés",
@@ -103,6 +110,7 @@ exports.createSavings = async (req, res) => {
         timeInYears: t,
         finalAmount: formatCOP(saldo),
         interestEarned: formatCOP(interestEarned),
+        createdAt: newSavings.createdAt,
       },
     });
   } catch (error) {
