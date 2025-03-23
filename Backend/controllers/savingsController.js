@@ -1,4 +1,5 @@
 const SavingsCalculation = require("../models/SavingsCalculation");
+const jwt = require("jsonwebtoken");
 
 // 🔹 Función para formatear valores en COP
 const formatCOP = (value) => new Intl.NumberFormat("es-CO", {
