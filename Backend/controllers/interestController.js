@@ -21,17 +21,19 @@ const formatToCOP = (amount) => {
 
 // Crear un cálculo de interés
 exports.createInterestCalculation = async (req, res) => {
-    try {
+  try {
+    const { principal, interestRate, timeInYears, interestType, saved } = req.body;
+
+    const { finalAmount, interestEarned } = calculateInterest(principal, interestRate, timeInYears, interestType);
+
+    // Si el usuario desea guardar el cálculo
+    if (saved) {
       if (!req.user || !req.user.userId) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
+        return res.status(401).json({ message: "Debes iniciar sesión para guardar el cálculo." });
       }
-  
-      const userId = req.user.userId;
-      const { principal, interestRate, timeInYears, interestType } = req.body;
-      const { finalAmount, interestEarned } = calculateInterest(principal, interestRate, timeInYears, interestType);
-  
+
       const interestCalc = new InterestCalculations({
-        userId,
+        userId: req.user.userId,
         principal,
         interestRate,
         timeInYears,
@@ -40,20 +42,31 @@ exports.createInterestCalculation = async (req, res) => {
         interestEarned,
         saved: true
       });
-  
+
       await interestCalc.save();
-  
-      res.status(201).json({
+
+      return res.status(201).json({
         ...interestCalc._doc,
         principal: formatToCOP(principal),
         finalAmount: formatToCOP(finalAmount),
         interestEarned: formatToCOP(interestEarned),
-        message: "Tus ganancias serian de " + formatToCOP(interestEarned)
+        message: "✅ Cálculo guardado. Tus ganancias serían de " + formatToCOP(interestEarned)
       });
-    } catch (error) {
-      res.status(500).json({ message: "Error al calcular el interés", error });
     }
-  };
+
+    // Si no se desea guardar el cálculo
+    return res.status(200).json({
+      principal: formatToCOP(principal),
+      finalAmount: formatToCOP(finalAmount),
+      interestEarned: formatToCOP(interestEarned),
+      message: "🧮 Cálculo realizado. Tus ganancias serían de " + formatToCOP(interestEarned)
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Error al calcular el interés", error });
+  }
+};
+
   
 // Obtener cálculos de interés por usuario
 exports.getUserInterestCalculations = async (req, res) => {
