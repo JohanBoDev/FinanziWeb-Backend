@@ -1,4 +1,5 @@
 const InvestmentCalculation = require("../models/InvestmentCalculation");
+const jwt = require("jsonwebtoken");
 
 // 📌 Función para formatear en pesos colombianos (COP)
 const formatToCOP = (value) => {
@@ -10,19 +11,11 @@ const formatToCOP = (value) => {
 };
 
 
-// 📌 Crear un cálculo de inversión (opcionalmente guardarlo)
-const createInvestment = async (req, res) => {
+// 📌 Crear un cálculo de inversión 
+exports.createInvestment = async (req, res) => {
   try {
-      if(!req.user || !req.user.userId) {
-            return res.status(401).json({ message: "Usuario no autenticado" });
-        };
+    const { initialInvestment, monthlyContribution, annualReturnRate, investmentYears, saved = false } = req.body;
 
-    const userId = req.user.userId;
-
-
-    const { initialInvestment, monthlyContribution, annualReturnRate, investmentYears, save } = req.body;
-
-    // Cálculo del valor futuro usando interés compuesto
     const months = investmentYears * 12;
     let finalValue = initialInvestment;
     for (let i = 0; i < months; i++) {
@@ -31,18 +24,28 @@ const createInvestment = async (req, res) => {
     }
     const totalGains = finalValue - (initialInvestment + monthlyContribution * months);
 
-    // Construcción del objeto de respuesta
     const result = {
       initialInvestment: formatToCOP(initialInvestment),
       monthlyContribution: formatToCOP(monthlyContribution),
       annualReturnRate: `${(annualReturnRate * 100).toFixed(2)}%`,
       investmentYears,
       finalValue: formatToCOP(finalValue),
-      totalGains: formatToCOP(totalGains)
+      totalGains: formatToCOP(totalGains),
     };
 
-    // Si el usuario decide guardar el cálculo
-    if (save) {
+    let userId = null;
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (saved) {
+      if (!token) return res.status(401).json({ message: "Debes iniciar sesión para guardar el cálculo." });
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.userId;
+      } catch (err) {
+        return res.status(401).json({ message: "Token inválido para guardar el cálculo." });
+      }
+    }
+
+    if (saved && userId) {
       const investment = new InvestmentCalculation({
         userId,
         initialInvestment,
@@ -54,15 +57,16 @@ const createInvestment = async (req, res) => {
         saved: true
       });
       await investment.save();
-      return res.status(201).json({ message: "Cálculo guardado", data: result });
+      return res.status(201).json({ message: "✅ Cálculo guardado", data: result });
     }
 
-    // Si el usuario solo quiere ver el cálculo sin guardarlo
-    res.status(200).json({ message: "Cálculo realizado sin guardar", data: result });
+    res.status(200).json({ message: "🧮 Cálculo realizado sin guardar", data: result });
+
   } catch (error) {
     res.status(500).json({ message: "Error al calcular la inversión", error: error.message });
   }
 };
+
 
 // 📌 Obtener todos los cálculos guardados del usuario
 const getInvestments = async (req, res) => {

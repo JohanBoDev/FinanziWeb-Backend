@@ -1,4 +1,5 @@
 const InterestCalculations = require("../models/InterestCalculation");
+const jwt = require("jsonwebtoken");
 
 // Función para calcular el interés
 const calculateInterest = (principal, rate, time, type) => {
@@ -22,18 +23,27 @@ const formatToCOP = (amount) => {
 // Crear un cálculo de interés
 exports.createInterestCalculation = async (req, res) => {
   try {
-    const { principal, interestRate, timeInYears, interestType, saved } = req.body;
+    const { principal, interestRate, timeInYears, interestType, saved = false } = req.body;
 
     const { finalAmount, interestEarned } = calculateInterest(principal, interestRate, timeInYears, interestType);
 
-    // Si el usuario desea guardar el cálculo
+    let userId = null;
+    const token = req.headers.authorization?.replace("Bearer ", "");
     if (saved) {
-      if (!req.user || !req.user.userId) {
+      if (!token) {
         return res.status(401).json({ message: "Debes iniciar sesión para guardar el cálculo." });
       }
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.userId;
+      } catch (err) {
+        return res.status(401).json({ message: "Token inválido para guardar el cálculo." });
+      }
+    }
 
+    if (saved && userId) {
       const interestCalc = new InterestCalculations({
-        userId: req.user.userId,
+        userId,
         principal,
         interestRate,
         timeInYears,
@@ -54,7 +64,6 @@ exports.createInterestCalculation = async (req, res) => {
       });
     }
 
-    // Si no se desea guardar el cálculo
     return res.status(200).json({
       principal: formatToCOP(principal),
       finalAmount: formatToCOP(finalAmount),
@@ -63,9 +72,10 @@ exports.createInterestCalculation = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: "Error al calcular el interés", error });
+    res.status(500).json({ message: "Error al calcular el interés", error: error.message });
   }
 };
+
 
   
 // Obtener cálculos de interés por usuario

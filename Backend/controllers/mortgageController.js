@@ -1,4 +1,5 @@
 const MortgageCalculation = require("../models/MortgageCalculation");
+const jwt = require("jsonwebtoken");
 
 // Función para calcular el pago mensual de una hipoteca
 const calculateMortgage = (loanAmount, annualInterestRate, loanTermYears) => {
@@ -26,64 +27,69 @@ const formatToCOP = (amount) => {
 // 📌 **Crear un cálculo de hipoteca**
 exports.createMortgageCalculation = async (req, res) => {
   try {
-    const { loanAmount, annualInterestRate, loanTermYears } = req.body;
+    const { loanAmount, annualInterestRate, loanTermYears, saved = false } = req.body;
 
-    // 🔹 Verificar si el usuario está autenticado y tiene un ID válido
-    if (!req.user || !req.user.userId) {
-      return res.status(401).json({ message: "Usuario no autenticado" });
-    }
-    const userId = req.user.userId;
-
-    // 🔹 Validar los datos de entrada
-    if (!loanAmount || !annualInterestRate || !loanTermYears) {
-      return res
-        .status(400)
-        .json({ message: "Todos los campos son obligatorios" });
-    }
-
-    // 🔹 Calcular los valores de la hipoteca
     const { monthlyPayment, totalCost, totalInterestPaid } = calculateMortgage(
       loanAmount,
       annualInterestRate / 100,
       loanTermYears
     );
 
-    // 🔹 Crear el objeto de hipoteca
-    const mortgageCalc = new MortgageCalculation({
-      userId,
-      loanAmount,
-      annualInterestRate,
-      loanTermYears,
-      monthlyPayment,
-      totalInterestPaid,
-      totalCost,
-      saved: true,
-    });
+    let userId = null;
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (saved) {
+      if (!token) return res.status(401).json({ message: "Debes iniciar sesión para guardar el cálculo." });
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.userId;
+      } catch (err) {
+        return res.status(401).json({ message: "Token inválido para guardar el cálculo." });
+      }
+    }
 
-    // 🔹 Guardar en la base de datos
-    await mortgageCalc.save();
+    if (saved && userId) {
+      const mortgageCalc = new MortgageCalculation({
+        userId,
+        loanAmount,
+        annualInterestRate,
+        loanTermYears,
+        monthlyPayment,
+        totalInterestPaid,
+        totalCost,
+        saved: true,
+      });
 
-    res.status(201).json({
-      _id: mortgageCalc._id,
-      userId: mortgageCalc.userId,
+      await mortgageCalc.save();
+
+      return res.status(201).json({
+        _id: mortgageCalc._id,
+        userId,
+        loanAmount: formatToCOP(loanAmount),
+        annualInterestRate: `${annualInterestRate}%`,
+        loanTermYears,
+        monthlyPayment: formatToCOP(monthlyPayment),
+        totalInterestPaid: formatToCOP(totalInterestPaid),
+        totalCost: formatToCOP(totalCost),
+        saved: true,
+        message: `✅ Guardado: Pago mensual ${formatToCOP(monthlyPayment)} | Total: ${formatToCOP(totalCost)}`
+      });
+    }
+
+    res.status(200).json({
       loanAmount: formatToCOP(loanAmount),
       annualInterestRate: `${annualInterestRate}%`,
       loanTermYears,
       monthlyPayment: formatToCOP(monthlyPayment),
       totalInterestPaid: formatToCOP(totalInterestPaid),
       totalCost: formatToCOP(totalCost),
-      saved: mortgageCalc.saved,
-      message: `Pago mensual: ${formatToCOP(
-        monthlyPayment
-      )}, Total a pagar: ${formatToCOP(totalCost)}`,
+      message: `🧮 Pago mensual: ${formatToCOP(monthlyPayment)} | Total a pagar: ${formatToCOP(totalCost)}`
     });
+
   } catch (error) {
-    console.error("❌ Error al calcular la hipoteca:", error);
-    res
-      .status(500)
-      .json({ message: "Error al calcular la hipoteca", error: error.message });
+    res.status(500).json({ message: "Error al calcular la hipoteca", error: error.message });
   }
 };
+
 
 // 📌 **Obtener todos los cálculos de hipoteca de un usuario**
 exports.getUserMortgageCalculations = async (req, res) => {

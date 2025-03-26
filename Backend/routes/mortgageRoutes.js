@@ -6,10 +6,10 @@ const {
     getMortgageCalculationById, 
     deleteMortgageCalculation 
 } = require("../controllers/mortgageController");
-const { verificarToken } = require("../middleware/auth");
+const { verificarToken, verificarTokenOpcional } = require("../middleware/auth");
 
 // 📌 Crear un cálculo de hipoteca
-router.post("/", verificarToken, createMortgageCalculation);
+router.post("/", verificarTokenOpcional, createMortgageCalculation);
 
 // 📌 Obtener todos los cálculos de hipoteca del usuario autenticado
 router.get("/", verificarToken, getUserMortgageCalculations);
