@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { createInterestCalculation, getUserInterestCalculations, getInterestCalculationById, deleteInterestCalculation  } = require('../controllers/interestController');
-const { verificarToken } = require("../middleware/auth");
+const { verificarToken, verificarTokenOpcional } = require("../middleware/auth");
 
 // 📌 Crear un nuevo cálculo de interés
 // Ruta: POST /api/interests/
 // Acceso: Usuario autenticado
 // Descripción: Calcula el interés (simple o compuesto) y guarda el resultado en la base de datos.
-router.post("/", verificarToken, createInterestCalculation);
+router.post("/", verificarTokenOpcional, createInterestCalculation);
 
 // 📌 Obtener todos los cálculos de interés de un usuario
 // Ruta: GET /api/interests/
