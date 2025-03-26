@@ -12,7 +12,7 @@ const formatToCOP = (value) => {
 
 
 // 📌 Crear un cálculo de inversión 
-exports.createInvestment = async (req, res) => {
+const createInvestment = async (req, res) => {
   try {
     const { initialInvestment, monthlyContribution, annualReturnRate, investmentYears, saved = false } = req.body;
 
