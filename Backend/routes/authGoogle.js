@@ -20,7 +20,7 @@ router.get("/google/callback",
     console.log("🟢 Token generado:", token);
 
     // Redirijo al frontend con el token como parámetro en la URL
-    res.redirect(`https://finanzi-liart.vercel.app//google-login-success#token=${token}`);
+    res.redirect(`https://finanzi-liart.vercel.app/google-login-success#token=${token}`);
   }
 );
 
