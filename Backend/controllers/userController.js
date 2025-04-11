@@ -55,6 +55,7 @@ const createUser = async (req, res) => {
   }
 };
 
+// 📌 Actualizar un usuario (Solo Admin)
 const updateUser = async (req, res) => {
     try {
       const { id } = req.params;
@@ -153,6 +154,19 @@ const updateUserPreferences = async (req, res) => {
   }
 };
 
+// 📌 Obtener el usuario autenticado
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener el usuario", error });
+  }
+};
+
 
 
 module.exports = {
@@ -162,5 +176,6 @@ module.exports = {
   deleteUser,
   getUserById,
   updateUserProfile,
-  updateUserPreferences
+  updateUserPreferences,
+  getCurrentUser,
 };

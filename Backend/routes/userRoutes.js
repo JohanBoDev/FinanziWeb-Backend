@@ -1,7 +1,7 @@
 const express = require("express");
 const { verificarToken, verificarAdmin } = require("../middleware/auth");
 const { register, login } = require("../controllers/authController");
-const { getAllUsers, createUser, updateUser, deleteUser, getUserById, updateUserPreferences, updateUserProfile } = require("../controllers/userController");
+const { getAllUsers, createUser, updateUser, deleteUser, getUserById, updateUserPreferences, updateUserProfile, getCurrentUser } = require("../controllers/userController");
 
 const router = express.Router();
 
@@ -20,5 +20,8 @@ router.get("/getUserById/:id", verificarToken, verificarAdmin, getUserById);
 // Rutas para actualizar perfil y preferencias
 router.put("/update-profile", verificarToken, updateUserProfile);
 router.put("/update-preferences", verificarToken, updateUserPreferences);
+
+// Ruta para obtener el usuario autenticado
+router.get("/me", verificarToken, getCurrentUser);
 
 module.exports = router;
