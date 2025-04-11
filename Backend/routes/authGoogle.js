@@ -19,7 +19,7 @@ router.get("/google/callback",
     });
 
     // Redirijo al frontend con el token como parámetro en la URL
-    res.redirect(`https://finanziweb.netlify.app/google-login-success?token=${token}`);
+    res.redirect(`http://localhost:5173/google-login-success?token=${token}`);
   }
 );
 
