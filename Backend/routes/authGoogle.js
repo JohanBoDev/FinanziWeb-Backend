@@ -17,6 +17,7 @@ router.get("/google/callback",
     const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
+    console.log("🟢 Token generado:", token);
 
     // Redirijo al frontend con el token como parámetro en la URL
     res.redirect(`http://localhost:5173/google-login-success?token=${token}`);
