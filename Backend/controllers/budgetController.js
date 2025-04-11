@@ -130,9 +130,6 @@ exports.getBudgets = async (req, res) => {
     }
 };
 
-  
-  
-
 // Eliminar un presupuesto
 exports.deleteBudget = async (req, res) => {
   try {

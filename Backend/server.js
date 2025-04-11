@@ -18,6 +18,9 @@ const expenseRoutes = require("./routes/expenseRoutes");
 const savingsGoalsRoutes = require("./routes/savingsGoalsRoutes");
 const debtManagementRoutes = require("./routes/debtManagementRoutes");
 const currencyRoutes = require("./routes/currencyRoutes");
+const authGoogleRoutes = require("./routes/authGoogle");
+const passport = require("passport");
+require("./config/passport");
 
 // Cargar variables de entorno
 dotenv.config();
@@ -38,6 +41,9 @@ app.get("/", (req, res) => {
   res.send("¡API funcionando con MongoDB!");
 });
 
+// Configurar Passport para autenticación
+app.use(passport.initialize());
+
 // Rutas principales
 app.use("/api/users", usersRoutes);
 app.use("/api/savings", savingsRoutes);
@@ -50,6 +56,10 @@ app.use("/api/expenses", expenseRoutes);
 app.use("/api/savingsGoals", savingsGoalsRoutes);
 app.use("/api/debtManagement", debtManagementRoutes);
 app.use("/api/currency", currencyRoutes);
+app.use("/api/auth", authGoogleRoutes);
+
+
+
 
 // Ruta de prueba
 app.get("/", (req, res) => {
