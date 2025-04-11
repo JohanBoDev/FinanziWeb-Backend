@@ -15,7 +15,7 @@ router.get("/google/callback",
   (req, res) => {
     // 🔐 Genero un token JWT para usar en el frontend
     const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "1h" // El token expira en 1 hora,
     });
     console.log("🟢 Token generado:", token);
 
