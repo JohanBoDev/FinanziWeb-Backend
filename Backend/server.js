@@ -20,11 +20,11 @@ const debtManagementRoutes = require("./routes/debtManagementRoutes");
 const currencyRoutes = require("./routes/currencyRoutes");
 const authGoogleRoutes = require("./routes/authGoogle");
 const passport = require("passport");
-require("./config/passport");
+
 
 // Cargar variables de entorno
 dotenv.config();
-
+require("./config/passport");
 // Crear la aplicación Express
 const app = express();
 
