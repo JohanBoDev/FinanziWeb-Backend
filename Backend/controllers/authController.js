@@ -29,9 +29,16 @@ const register = async (req, res) => {
         },
         role: role === "admin" ? "admin" : "user" // Solo permitir "admin" si se especifica
       });
+
+      //Generar token JWT
+      const token = jwt.sign(
+        { userId: user._id, email: user.email, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES || "1h" }
+      );
   
       await user.save();
-      res.status(201).json({ message: "Usuario registrado correctamente", user });
+      res.status(201).json({ message: "Usuario registrado correctamente", token,  user });
     } catch (error) {
       res.status(500).json({ message: "Error en el servidor", error });
     }
